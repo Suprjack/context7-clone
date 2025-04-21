@@ -20,7 +20,7 @@ An MCP (Model Context Protocol) server for providing up-to-date documentation fo
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/context7-clone.git
+git clone https://github.com/Suprjack/context7-clone.git
 cd context7-clone
 ```
 
