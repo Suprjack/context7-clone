@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Context7 Clone - Documentation for LLMs</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #0070f3;
+      margin-bottom: 10px;
+    }
+    .description {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #0070f3;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #0051a8;
+    }
+    .result {
+      margin-top: 30px;
+      padding: 20px;
+      background-color: #f7f7f7;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+    .error {
+      color: #e00;
+      margin-top: 10px;
+    }
+    .instructions {
+      margin-top: 40px;
+      padding: 20px;
+      background-color: #f0f7ff;
+      border-radius: 4px;
+    }
+    code {
+      background-color: #eee;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>Context7 Clone</h1>
+  <p class="description">Up-to-date documentation for LLMs and AI code editors</p>
+  
+  <div class="form-group">
+    <label for="library">Library Name:</label>
+    <input type="text" id="library" placeholder="e.g., react, nextjs, tailwindcss">
+  </div>
+  
+  <div class="form-group">
+    <label for="topic">Topic (optional):</label>
+    <input type="text" id="topic" placeholder="e.g., hooks, routing, components">
+  </div>
+  
+  <div class="form-group">
+    <label for="tokens">Max Tokens:</label>
+    <input type="number" id="tokens" value="5000">
+  </div>
+  
+  <button id="fetch-docs">Fetch Documentation</button>
+  
+  <div id="error" class="error" style="display: none;"></div>
+  <div id="result" class="result" style="display: none;"></div>
+  
+  <div class="instructions">
+    <h2>How to Use with AI Coding Assistants</h2>
+    <p>This MCP server can be integrated with AI coding assistants that support the Model Context Protocol (MCP).</p>
+    
+    <h3>Cursor</h3>
+    <p>Add this to your <code>~/.cursor/mcp.json</code> file:</p>
+    <pre><code>{
+  "mcpServers": {
+    "context7-clone": {
+      "command": "node",
+      "args": ["path/to/context7-clone/dist/index.js"]
+    }
+  }
+}</code></pre>
+    
+    <h3>Claude Desktop</h3>
+    <p>Add this to your Claude Desktop configuration:</p>
+    <pre><code>{
+  "mcpServers": {
+    "context7-clone": {
+      "command": "node",
+      "args": ["path/to/context7-clone/dist/index.js"]
+    }
+  }
+}</code></pre>
+  </div>
+  
+  <script>
+    document.getElementById('fetch-docs').addEventListener('click', async () => {
+      const library = document.getElementById('library').value.trim();
+      const topic = document.getElementById('topic').value.trim();
+      const tokens = parseInt(document.getElementById('tokens').value);
+      
+      if (!library) {
+        showError('Please enter a library name');
+        return;
+      }
+      
+      try {
+        // First resolve the library ID
+        const resolveResponse = await fetch('/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'resolve-library-id',
+            params: {
+              libraryName: library,
+            },
+          }),
+        });
+        
+        const resolveData = await resolveResponse.json();
+        
+        if (resolveData.error) {
+          showError(`Error resolving library: ${resolveData.error.message}`);
+          return;
+        }
+        
+        const libraryId = resolveData.result.libraryId;
+        
+        // Then fetch the documentation
+        const docsResponse = await fetch('/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'get-library-docs',
+            params: {
+              context7CompatibleLibraryID: libraryId,
+              topic: topic || undefined,
+              tokens: tokens,
+            },
+          }),
+        });
+        
+        const docsData = await docsResponse.json();
+        
+        if (docsData.error) {
+          showError(`Error fetching documentation: ${docsData.error.message}`);
+          return;
+        }
+        
+        showResult(docsData.result.docs);
+      } catch (error) {
+        showError(`Network error: ${error.message}`);
+      }
+    });
+    
+    function showError(message) {
+      const errorElement = document.getElementById('error');
+      errorElement.textContent = message;
+      errorElement.style.display = 'block';
+      document.getElementById('result').style.display = 'none';
+    }
+    
+    function showResult(content) {
+      const resultElement = document.getElementById('result');
+      resultElement.textContent = content;
+      resultElement.style.display = 'block';
+      document.getElementById('error').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
